@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.339
+#AccAu3Wrapper_Res_Fileversion=1.0.0.341
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -166,7 +166,7 @@ Func _CreateMap()
 	
 	Local $sCmdStr = "net use * /del /y && net use T: " & StringLeft($sShareMapPath, StringLen($sShareMapPath) - 1) & ' "' & $sPsd & '" /user:' & StringTrimRight(StringTrimLeft($sShareMapPath, 2), 6) & $sUser
 	Local $bFlag = True
-	$sServerLogPath = $sShareMapPath & "\LogFile\" & $sMac & "\"
+	$sServerLogPath = $sShareMapPath & "\LogFile\" & $sMac & "\BenchmarkTest\"
 	_FileWriteLog($sLogPath, "成功;获取在PE上建立服务器上共享的映射命令行：" & $sCmdStr)
 	
 	For $i = 0 To 19
@@ -230,11 +230,15 @@ Func _Run_Benchmark_Test()
 	FileCopy($sLogPath, "C:\BenchmarkTest\", $FC_OVERWRITE + $FC_CREATEPATH)
 	FileCopy($sLogPath, $sServerLogPath, $FC_OVERWRITE + $FC_CREATEPATH)
 	
-	Run("C:\BenchSoftwares\OpenHardwareMonitor\OpenHardwareMonitor.exe")
+	If FileExists("C:\BenchSoftwares\OpenHardwareMonitor\OpenHardwareMonitor.exe") Then
+		Run("C:\BenchSoftwares\OpenHardwareMonitor\OpenHardwareMonitor.exe")
+	EndIf
 	
 	Sleep(5000)
 	
-	Run("C:\BenchSoftwares\BenchMarkTest\BenchMarkTest.exe -D")
+	If FileExists("C:\BenchSoftwares\BenchMarkTest\BenchMarkTest.exe") Then
+		Run("C:\BenchSoftwares\BenchMarkTest\BenchMarkTest.exe -D")
+	EndIf
 	
 EndFunc   ;==>_Run_Benchmark_Test
 
