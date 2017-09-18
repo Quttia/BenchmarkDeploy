@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.371
+#AccAu3Wrapper_Res_Fileversion=1.0.0.367
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -16,7 +16,7 @@
 #Obfuscator_Parameters=/cs=1 /cn=1 /cf=1 /cv=1 /sf=1 /sv=1	 ;脚本加密参数: 0/1不加密/加密, /cs字符串 /cn数字 /cf函数名 /cv变量名 /sf精简函数 /sv精简变量
 #AccAu3Wrapper_DBSupport=y									 ;使字符串加密支持双字节字符(y/n) <- 可对中文字符等实现字符串加密
 #AccAu3Wrapper_AntiDecompile=y								 ;是否启用防反功能(y/n) <- 简单防反, 用于应对傻瓜式反编译工具
-#NoTrayIcon
+;#NoTrayIcon
 #AutoIt3Wrapper_Change2CUI=y
 #EndRegion
 
@@ -50,6 +50,41 @@ Func _Main()
 	
 	; 1. 卸载测试软件
 	_FileWriteLog($sLogPath, "-------基准测试清理工作开始-------")
+	
+	;移除3DMark注册
+	Local $sCmdStr = '"C:\Program Files\Futuremark\3DMark\3DMarkCmd.exe" --unregister'
+	If FileExists("C:\Program Files\Futuremark\3DMark\3DMarkCmd.exe") = 1 Then
+		RunWait(@ComSpec & " /c " & $sCmdStr, "")
+		_FileWriteLog($sLogPath, "成功;移除3DMark注册成功")
+		Sleep(5000)
+	EndIf
+
+	;卸载3DMark
+	If FileExists("C:\ProgramData\Package Cache\{a0df0e52-2800-4963-9ba1-382620df4d05}\3dmark-setup.exe") = 1 Then
+		$sCmdStr = '"C:\ProgramData\Package Cache\{a0df0e52-2800-4963-9ba1-382620df4d05}\3dmark-setup.exe" /uninstall /quiet'
+		RunWait(@ComSpec & " /c " & $sCmdStr, "")
+		_FileWriteLog($sLogPath, "成功;卸载3DMark成功")
+	EndIf
+
+	;卸载Futuremark SystemInfo
+	If FileExists("C:\Program Files (x86)\Futuremark\SystemInfo\FMSISvc.exe") = 1 Then
+		$sCmdStr = "MsiExec.exe /quiet /X{E540B871-3230-4C5B-AAD5-A30F64398275}"
+		RunWait(@ComSpec & " /c " & $sCmdStr, "")
+		_FileWriteLog($sLogPath, "成功;卸载Futuremark SystemInfo成功")
+	EndIf
+
+	;删除 Futuremark SystemInfo Service 服务
+	_ServDelete("Futuremark SystemInfo Service")
+	_FileWriteLog($sLogPath, "成功;删除 Futuremark SystemInfo Service 服务")
+	Sleep(5000)
+	
+	;删除残余文件夹
+	DirRemove(@LocalAppDataDir & "\Futuremark", 1)
+	Sleep(1000)
+	DirRemove(@AppDataCommonDir & "\Futuremark", 1)
+	Sleep(1000)
+	DirRemove(@AppDataCommonDir & "\Package Cache", 1)
+	Sleep(1000)
 
 	;卸载 BurnInTest 软件
 	If FileExists("C:\Program Files\BurnInTest\unins000.exe") = 1 Then
@@ -67,18 +102,25 @@ Func _Main()
 		WinWaitActive($hWnd)
 		WinClose($hWnd)
 		WinWaitClose($hWnd)
-		Sleep(3000)
+		Sleep(5000)
 		DirRemove("C:\BenchSoftwares\OpenHardwareMonitor", 1)
-		Sleep(3000)
+		Sleep(5000)
 		_FileWriteLog($sLogPath, "成功;删除温度监控软件文件成功")
 	EndIf
 
 	_FileWriteLog($sLogPath, "-------基准测试清理工作完成-------")
 	
 	;2. 上传日志到服务器，清理日志
+	Local $source_3DMarkLog = @MyDocumentsDir & "\3DMark"
+	Local $dest_3DMarkLog = "C:\BenchmarkTest\3Dmark"
 	Local $sourceDir = "C:\BenchmarkTest"
 	Local $destDir = "T:\LogFile\" & $sMac & "\BenchmarkTest"
 	Local $desktop_File = @DesktopDir & "\deploy.bat"
+	
+	DirCopy($source_3DMarkLog, $dest_3DMarkLog, $FC_OVERWRITE)
+	Sleep(3000)
+	DirRemove($source_3DMarkLog, 1)
+	Sleep(3000)
 	
 	DirCopy($sourceDir, $destDir, $FC_OVERWRITE)
 	Sleep(3000)
@@ -94,11 +136,7 @@ Func _Main()
 	
 	;4. 删除开机启动项
 	RegDelete("HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run", "firstdeploy")
-	Sleep(2000)
-	
-	;5. 添加开机启动项
-	RegWrite("HKEY_USERS\S-1-5-21-1217453010-1225421808-608591086-1003\Software\Microsoft\Windows\CurrentVersion\Run", "UPUPOO", "REG_SZ", "C:\UPUPOO\Launch.exe")
-	Sleep(2000)
+	Sleep(3000)
 	
 EndFunc   ;==>_Main
 
