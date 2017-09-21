@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.0
+#AccAu3Wrapper_Res_Fileversion=1.0.0.2
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -169,16 +169,21 @@ Func _CreateMap()
 	$sServerLogPath = $sShareMapPath & "\LogFile\" & $sMac & "\BenchmarkTest\"
 	_FileWriteLog($sLogPath, "成功;获取在PE上建立服务器上共享的映射命令行：" & $sCmdStr)
 	
-	For $i = 0 To 19
+	For $i = 0 To 11
 		RunWait(@ComSpec & " /c " & $sCmdStr, "")
 		
-		If FileCopy($sLogPath, $sServerLogPath, $FC_OVERWRITE + $FC_CREATEPATH) Then
+		If FileCopy($sLogPath, $sServerLogPath, $FC_OVERWRITE + $FC_CREATEPATH) And Ping("www.baidu.com") > 0 Then
 			_FileWriteLog($sLogPath, "成功;在PE上建立服务器上共享的映射")
 			$bFlag = False
 			ExitLoop
 		Else
 			_FileWriteLog($sLogPath, "重试" & $i & ";在PE上建立服务器上共享的映射")
-			Sleep(15000)
+			
+			;重新获取ip地址
+			RunWait(@ComSpec & " /c ipconfig/release", "")
+			Sleep(2000)
+			RunWait(@ComSpec & " /c ipconfig/renew", "")
+			Sleep(3000)
 		EndIf
 	Next
 	
