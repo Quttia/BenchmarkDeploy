@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.6
+#AccAu3Wrapper_Res_Fileversion=1.0.0.9
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -31,6 +31,7 @@
 
 #include <FileConstants.au3>
 #include <File.au3>
+#include <StringConstants.au3>
 
 Global $sMac ; 物理地址
 Global $sShareMapPath ;服务器映射地址
@@ -38,7 +39,7 @@ Global $sUser ;服务器用户名
 Global $sPsd ;服务器密码
 Global $sLogPath ;本地日志文件路径
 Global $sServerLogPath ;服务器日志文件路径
-Global $sInterfaceName ;网络接口名称
+Global $aIPArray[5] ;IP配置信息数组
 
 _Main()
 
@@ -58,9 +59,11 @@ Func _Main()
 	
 	_CreateMap() ;在PE上建立服务器上共享的映射
 	
-	_DownloadTools() ;下载基准测试软件
+	;_DownloadTools() ;下载基准测试软件
 	
-	_Run_Benchmark_Test() ; 运行测试软件
+	;_Run_Benchmark_Test() ; 运行测试软件
+	
+	Sleep(10000000)
 	
 EndFunc   ;==>_Main
 
@@ -165,11 +168,9 @@ EndFunc   ;==>_Read_ShareMapPath
 ;==========================================================================
 Func _CreateMap()
 	
-	_Get_IP_Config() ;获取网络接口名称
-	
 	;处理重复运行场景，先释放静态 IP 和 DNS
-	RunWait(@ComSpec & ' /c netsh interface ip set address name="' & $sInterfaceName & '" source=dhcp', "")
-	RunWait(@ComSpec & ' /c netsh interface ip set dns name="' & $sInterfaceName & '" source=dhcp', "")
+	RunWait(@ComSpec & ' /c netsh interface ip set address name="以太网" source=dhcp', "")
+	RunWait(@ComSpec & ' /c netsh interface ip set dns name="以太网" source=dhcp', "")
 	
 	;在样机上建立服务器上共享的映射
 	Local $sCmdStr = "net use * /del /y && net use T: " & StringLeft($sShareMapPath, StringLen($sShareMapPath) - 1) & ' "' & $sPsd & '" /user:' & StringTrimRight(StringTrimLeft($sShareMapPath, 2), 6) & $sUser
@@ -182,8 +183,34 @@ Func _CreateMap()
 		
 		If FileCopy($sLogPath, $sServerLogPath, $FC_OVERWRITE + $FC_CREATEPATH) And Ping("www.baidu.com") > 0 Then
 			_FileWriteLog($sLogPath, "成功;在PE上建立服务器上共享的映射")
-			$bFlag = False
-			ExitLoop
+			
+			;自动获取的 IP 信息
+			_Get_IP_Config()
+			
+			;将自动获取的 IP 信息固定为静态 IP 信息
+			$sCmdStr = StringFormat('netsh interface ip set address "以太网" static %s %s %s 1', $aIPArray[0], $aIPArray[1], $aIPArray[2])
+			RunWait(@ComSpec & " /c " & $sCmdStr, "")
+			_FileWriteLog($sLogPath, "成功;修改 IP 信息：" & $sCmdStr)
+			
+			$sCmdStr = 'netsh interface ip set dns name="以太网" source=static addr=' & $aIPArray[3] & " register=primary validate=no"
+			RunWait(@ComSpec & " /c " & $sCmdStr, "")
+			_FileWriteLog($sLogPath, "成功;修改 首选DNS 信息：" & $sCmdStr)
+			
+			$sCmdStr = 'netsh interface ip add dns name="以太网" addr=' & $aIPArray[4] & ' index=2 validate=no'
+			RunWait(@ComSpec & " /c " & $sCmdStr, "")
+			_FileWriteLog($sLogPath, "成功;修改 备用DNS 信息：" & $sCmdStr)
+			
+			Sleep(5000)
+			
+			;联网成功，退出循环
+			If Ping("www.baidu.com") > 0 Then
+				_FileWriteLog($sLogPath, "成功;将自动获取的 IP 信息固定为静态 IP 信息后联网成功")
+				$bFlag = False
+				ExitLoop
+			Else
+				_FileWriteLog($sLogPath, "失败;将自动获取的 IP 信息固定为静态 IP 信息后联网失败")
+				Exit
+			EndIf
 		Else
 			_FileWriteLog($sLogPath, "重试" & $i & ";在PE上建立服务器上共享的映射")
 			
@@ -233,7 +260,7 @@ Func _Get_IP_Config()
 	#ce
 	
 	Local $sIpconfig = "C:\ipconfig.txt"
-	RunWait(@ComSpec & ' /c netsh interface ip show config > ' & $sIpconfig, "")
+	RunWait(@ComSpec & ' /c netsh interface ip show config "以太网" > ' & $sIpconfig, "")
 	
 	If Not FileExists($sIpconfig) Then
 		_FileWriteLog($sLogPath, "失败;生成IP配置信息文件失败")
@@ -244,7 +271,7 @@ Func _Get_IP_Config()
 	Local $aArray = 0
 	_FileReadToArray($sIpconfig, $aArray)
 	If @error = 0 Then
-		_FileWriteLog($sLogPath, "成功;获取IP配置信息成功")
+		_FileWriteLog($sLogPath, "成功;获取IP配置信息")
 		;FileDelete($tmpfile)
 	Else
 		_FileWriteLog($sLogPath, "失败;获取IP配置信息失败")
@@ -252,11 +279,13 @@ Func _Get_IP_Config()
 		Exit
 	EndIf
 	
-	$sInterfaceName = StringSplit($aArray[2], '"', $STR_NOCOUNT)[1] ;网络配置名称
-	_FileWriteLog($sLogPath, "成功;获取网络配置名称：" & $sInterfaceName)
-	
-	;删除IP配置信息文件
-	FileDelete($sIpconfig)
+	;IP配置信息数组
+	Global $aIPArray[5]
+	$aIPArray[0] = StringSplit(StringStripWS($aArray[4], $STR_STRIPALL), ":", $STR_NOCOUNT)[1] ;						IP 地址
+	$aIPArray[1] = StringTrimRight(StringSplit(StringStripWS($aArray[5], $STR_STRIPALL), "码", $STR_NOCOUNT)[1], 1) ;	掩码
+	$aIPArray[2] = StringSplit(StringStripWS($aArray[6], $STR_STRIPALL), ":", $STR_NOCOUNT)[1] ;						默认网关
+	$aIPArray[3] = StringSplit(StringStripWS($aArray[9], $STR_STRIPALL), ":", $STR_NOCOUNT)[1] ;						首选 DNS 服务器
+	$aIPArray[4] = StringStripWS($aArray[10], $STR_STRIPALL) ;															备用 DNS 服务器
 
 EndFunc   ;==>_Get_IP_Config
 
