@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.6
+#AccAu3Wrapper_Res_Fileversion=1.0.0.8
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -38,7 +38,7 @@ Global $sUser ;服务器用户名
 Global $sPsd ;服务器密码
 Global $sLogPath ;本地日志文件路径
 Global $sServerLogPath ;服务器日志文件路径
-Global $sInterfaceName ;网络接口名称
+;Global $sInterfaceName ;网络接口名称
 
 _Main()
 
@@ -165,11 +165,11 @@ EndFunc   ;==>_Read_ShareMapPath
 ;==========================================================================
 Func _CreateMap()
 	
-	_Get_IP_Config() ;获取网络接口名称
+	;_Get_IP_Config() ;获取网络接口名称
 	
 	;处理重复运行场景，先释放静态 IP 和 DNS
-	RunWait(@ComSpec & ' /c netsh interface ip set address name="' & $sInterfaceName & '" source=dhcp', "")
-	RunWait(@ComSpec & ' /c netsh interface ip set dns name="' & $sInterfaceName & '" source=dhcp', "")
+	;RunWait(@ComSpec & ' /c netsh interface ip set address name="' & $sInterfaceName & '" source=dhcp', "")
+	;RunWait(@ComSpec & ' /c netsh interface ip set dns name="' & $sInterfaceName & '" source=dhcp', "")
 	
 	;在样机上建立服务器上共享的映射
 	Local $sCmdStr = "net use * /del /y && net use T: " & StringLeft($sShareMapPath, StringLen($sShareMapPath) - 1) & ' "' & $sPsd & '" /user:' & StringTrimRight(StringTrimLeft($sShareMapPath, 2), 6) & $sUser
@@ -208,15 +208,15 @@ Func _CreateMap()
 	
 EndFunc   ;==>_CreateMap
 
+#cs
+	;==========================================================================
+	; 函数名：_Get_IP_Config
+	; 说明：获取IP配置信息
+	; 参数：无
+	; 返回值：无
+	;==========================================================================
+	Func _Get_IP_Config()
 
-;==========================================================================
-; 函数名：_Get_IP_Config
-; 说明：获取IP配置信息
-; 参数：无
-; 返回值：无
-;==========================================================================
-Func _Get_IP_Config()
-	
 	;生成IP配置信息文件
 	#cs
 		接口 "以太网" 的配置
@@ -231,34 +231,35 @@ Func _Get_IP_Config()
 		用哪个前缀注册:                   只是主要
 		通过 DHCP 配置的 WINS 服务器:     无
 	#ce
-	
+
 	Local $sIpconfig = "C:\ipconfig.txt"
 	RunWait(@ComSpec & ' /c netsh interface ip show config > ' & $sIpconfig, "")
-	
+
 	If Not FileExists($sIpconfig) Then
-		_FileWriteLog($sLogPath, "失败;生成IP配置信息文件失败")
-		;Shutdown($SD_SHUTDOWN)
-		Exit
+	_FileWriteLog($sLogPath, "失败;生成IP配置信息文件失败")
+	;Shutdown($SD_SHUTDOWN)
+	Exit
 	EndIf
-	
+
 	Local $aArray = 0
 	_FileReadToArray($sIpconfig, $aArray)
 	If @error = 0 Then
-		_FileWriteLog($sLogPath, "成功;获取IP配置信息成功")
-		;FileDelete($tmpfile)
+	_FileWriteLog($sLogPath, "成功;获取IP配置信息成功")
+	;FileDelete($tmpfile)
 	Else
-		_FileWriteLog($sLogPath, "失败;获取IP配置信息失败")
-		;Shutdown($SD_SHUTDOWN)
-		Exit
+	_FileWriteLog($sLogPath, "失败;获取IP配置信息失败")
+	;Shutdown($SD_SHUTDOWN)
+	Exit
 	EndIf
-	
+
 	$sInterfaceName = StringSplit($aArray[2], '"', $STR_NOCOUNT)[1] ;网络配置名称
 	_FileWriteLog($sLogPath, "成功;获取网络配置名称：" & $sInterfaceName)
-	
+
 	;删除IP配置信息文件
 	FileDelete($sIpconfig)
 
-EndFunc   ;==>_Get_IP_Config
+	EndFunc   ;==>_Get_IP_Config
+#ce
 
 
 ;==========================================================================
