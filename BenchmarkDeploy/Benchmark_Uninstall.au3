@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.387
+#AccAu3Wrapper_Res_Fileversion=1.0.0.392
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -51,14 +51,39 @@ Func _Main()
 	
 	; 1. 卸载测试软件
 	_FileWriteLog($sLogPath, "-------基准测试清理工作开始-------")
+	
+	;进程残留导致无法卸载完全 BUG
+	ProcessClose("Battery_Capacity_Plugin.exe")
+	ProcessClose("bit.exe")
+	ProcessClose("bit32.exe")
+	ProcessClose("Endpoint.exe")
+	ProcessClose("MemTest32.exe")
+	ProcessClose("MemTest64.exe")
+	ProcessClose("Microphone_Plugin.exe")
+	ProcessClose("rebooter.exe")
+	ProcessClose("Sound_Plugin.exe")
+	ProcessClose("Webcam_Plugin.exe")
 
 	;卸载 BurnInTest 软件
 	If FileExists("C:\Program Files\BurnInTest\unins000.exe") = 1 Then
 		Run("C:\Program Files\BurnInTest\unins000.exe")
 		WinWaitActive("BurnInTest Uninstall")
 		Send("!y")
-		WinWaitActive("BurnInTest Uninstall", "BurnInTest was successfully removed from your computer.")
+		WinWaitActive("BurnInTest Uninstall", "BurnInTest was successfully removed from your computer.", 15)
 		Send("{ENTER}")
+		
+		;修复无法卸载完全的BUG
+		For $i = 0 To 3
+			If FileExists("C:\Program Files\BurnInTest") = 0 Then
+				ExitLoop
+			Else
+				DirRemove("C:\Program Files\BurnInTest", 1)
+				_FileWriteLog($sLogPath, "成功;尝试卸载 BurnInTest 软件" & ($i + 1) & "次...")
+				ConsoleWrite("成功;尝试卸载 BurnInTest 软件" & ($i + 1) & "次..." & @CRLF)
+				Sleep(30000)
+			EndIf
+		Next
+		
 		_FileWriteLog($sLogPath, "成功;卸载 BurnInTest 软件成功")
 		ConsoleWrite("成功;卸载 BurnInTest 软件成功..." & @CRLF)
 	EndIf
