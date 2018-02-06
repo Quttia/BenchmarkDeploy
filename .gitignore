@@ -2,4 +2,7 @@ BenchmarkDeploy/BackUp
 BenchmarkDeploy/demo.au3
 BenchmarkDeploy/demo.exe
 *.exe
+<<<<<<< HEAD
 *.exe
+=======
+>>>>>>> 2894a8cab6952e141d80b23a600d345da501deff
