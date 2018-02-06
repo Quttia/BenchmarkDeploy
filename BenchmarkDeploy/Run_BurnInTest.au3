@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.7
+#AccAu3Wrapper_Res_Fileversion=1.0.0.10
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -33,7 +33,7 @@ _Main()
 
 Func _Main()
 	
-	Run("C:\Program Files\BurnInTest\bit.exe -C C:\BenchmarkTest\BurnInTest\Mayn.bitcfg -D " & $CmdLine[1] & " -R")
+	Run("C:\Program Files\BurnInTest\bit.exe -C C:\BenchmarkTest\BurnInTest\" & $CmdLine[1] & ".bitcfg -D " & $CmdLine[2] & " -R")
 	
 	WinWait("BurnInTest test result")
 	WinActivate("BurnInTest test result")
@@ -54,6 +54,6 @@ Func _Main()
 	EndIf
 	
 	;修复BUG：文件“C:\BenchmarkTest\BurnInTest\TestResult\BIT_log.htm”正由另一进程使用，因此该进程无法访问此文件。
-	Sleep(2000)
+	Sleep(5000)
 	
 EndFunc   ;==>_Main

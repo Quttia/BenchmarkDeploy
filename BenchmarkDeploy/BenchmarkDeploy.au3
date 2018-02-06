@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.8
+#AccAu3Wrapper_Res_Fileversion=1.0.0.9
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -38,6 +38,7 @@ Global $sUser ;服务器用户名
 Global $sPsd ;服务器密码
 Global $sLogPath ;本地日志文件路径
 Global $sServerLogPath ;服务器日志文件路径
+Global $sDownloadPath ;服务器基准测试软件下载路径
 ;Global $sInterfaceName ;网络接口名称
 
 _Main()
@@ -130,6 +131,17 @@ Func _Read_ShareMapPath()
 	Else
 		$sShareMapPath = $sRead
 		_FileWriteLog($sLogPath, "成功;获取配置文件中的服务器共享地址映射配置：" & $sShareMapPath)
+	EndIf
+	
+	;服务器基准测试软件下载路径
+	$sRead = IniRead($sFilePath, "DownloadPath", "DownloadPath", "Error")
+	If $sRead = "Error" Then
+		_FileWriteLog($sLogPath, "失败;获取配置文件中的服务器基准测试软件下载路径失败，程序退出")
+		;Shutdown($SD_SHUTDOWN)
+		Exit
+	Else
+		$sDownloadPath = $sRead
+		_FileWriteLog($sLogPath, "成功;获取配置文件中的基准测试软件下载路径：" & $sDownloadPath)
 	EndIf
 	
 	;服务器登录
@@ -270,7 +282,7 @@ EndFunc   ;==>_CreateMap
 ;==========================================================================
 Func _DownloadTools()
 	
-	Local $sBenchmarkPath = $sShareMapPath & "\Benchmark"
+	Local $sBenchmarkPath = $sShareMapPath & "\BenchmarkDownload\" & $sDownloadPath
 	Local $sDestPath = "C:\"
 	
 	If DirCopy($sBenchmarkPath, $sDestPath, $FC_OVERWRITE) = 1 Then
