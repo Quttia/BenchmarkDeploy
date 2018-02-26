@@ -6,7 +6,7 @@
 #AccAu3Wrapper_UseUpx=n										 ;是否使用UPX压缩(y/n) 注:开启压缩极易引起误报问题
 #AccAu3Wrapper_Res_Comment=									 ;程序注释
 #AccAu3Wrapper_Res_Description=								 ;程序描述
-#AccAu3Wrapper_Res_Fileversion=1.0.0.398
+#AccAu3Wrapper_Res_Fileversion=1.0.0.399
 #AccAu3Wrapper_Res_FileVersion_AutoIncrement=y				 ;自动更新版本 y/n/p=自动/不自动/询问
 #AccAu3Wrapper_Res_ProductVersion=1.0						 ;产品版本
 #AccAu3Wrapper_Res_Language=2052							 ;资源语言, 英语=2057/中文=2052
@@ -49,7 +49,16 @@ Func _Main()
 	
 	Local $sLogPath = "C:\BenchmarkTest\BenchmarkTest.log"
 	
-	; 1. 卸载测试软件
+	;1. 添加开机启动项
+	If FileExists("C:\UPUPOO\Launch.exe") Then
+		Local $sSID = _Security__LookupAccountName(@UserName)[0] ;获取用户 SID
+		RegWrite("HKEY_USERS\" & $sSID & "\Software\Microsoft\Windows\CurrentVersion\Run", "UPUPOO", "REG_SZ", "C:\UPUPOO\Launch.exe")
+		_FileWriteLog($sLogPath, "成功;添加开机启动项UPUPOO成功：" & $sSID)
+		ConsoleWrite("成功;添加开机启动项UPUPOO成功..." & @CRLF)
+		Sleep(2000)
+	EndIf
+	
+	;2. 卸载测试软件
 	_FileWriteLog($sLogPath, "-------基准测试清理工作开始-------")
 	
 	;进程残留导致无法卸载完全 BUG
@@ -101,31 +110,25 @@ Func _Main()
 		ConsoleWrite("成功;删除温度监控软件文件成功..." & @CRLF)
 	EndIf
 	
-	;2. 删除开机启动项
-	RegDelete("HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run", "BenchmarkDeploy")
-	_FileWriteLog($sLogPath, "成功;删除开机启动项BenchmarkDeploy成功")
-	ConsoleWrite("成功;删除开机启动项BenchmarkDeploy成功..." & @CRLF)
-	Sleep(2000)
-	
-	;3. 添加开机启动项
-	If FileExists("C:\UPUPOO\Launch.exe") Then
-		Local $sSID = _Security__LookupAccountName(@UserName)[0] ;获取用户 SID
-		RegWrite("HKEY_USERS\" & $sSID & "\Software\Microsoft\Windows\CurrentVersion\Run", "UPUPOO", "REG_SZ", "C:\UPUPOO\Launch.exe")
-		_FileWriteLog($sLogPath, "成功;添加开机启动项UPUPOO成功：" & $sSID)
-		ConsoleWrite("成功;添加开机启动项UPUPOO成功..." & @CRLF)
-		Sleep(2000)
-	EndIf
-	
-	;4. 改回自动获取 IP，释放静态 IP 和 DNS
-	;_Get_IP_Config()
-	
-	;RunWait(@ComSpec & ' /c netsh interface ip set address name="' & $sInterfaceName & '" source=dhcp', "C:\Windows\System32")
-	;RunWait(@ComSpec & ' /c netsh interface ip set dns name="' & $sInterfaceName & '" source=dhcp', "C:\Windows\System32")
-	
-	;_FileWriteLog($sLogPath, "成功;改回自动获取 IP，释放静态 IP 和 DNS成功")
 	_FileWriteLog($sLogPath, "-------基准测试清理工作完成-------")
 	
-	;5. 上传日志到服务器，清理日志
+	#cs
+		;2. 删除开机启动项
+		RegDelete("HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run", "BenchmarkDeploy")
+		_FileWriteLog($sLogPath, "成功;删除开机启动项BenchmarkDeploy成功")
+		ConsoleWrite("成功;删除开机启动项BenchmarkDeploy成功..." & @CRLF)
+		Sleep(2000)
+
+		;4. 改回自动获取 IP，释放静态 IP 和 DNS
+		_Get_IP_Config()
+
+		RunWait(@ComSpec & ' /c netsh interface ip set address name="' & $sInterfaceName & '" source=dhcp', "C:\Windows\System32")
+		RunWait(@ComSpec & ' /c netsh interface ip set dns name="' & $sInterfaceName & '" source=dhcp', "C:\Windows\System32")
+
+		_FileWriteLog($sLogPath, "成功;改回自动获取 IP，释放静态 IP 和 DNS成功")
+	#ce
+	
+	;3. 上传日志到服务器，清理日志
 	Local $sourceDir = "C:\BenchmarkTest"
 	Local $destDir = "T:\LogFile\" & $sMac & "\BenchmarkTest"
 	
